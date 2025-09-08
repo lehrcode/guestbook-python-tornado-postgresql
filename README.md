@@ -1,16 +1,23 @@
 # Ein Gästebuch in Python mit Tornado und PostgreSQL
 
-Ein Klassiker im Internet aus der Zeit vor dem Siegeszug der Sozialen Medien ist das Gästebuch. Was Anfang der 2000er noch bei vielen Homepages anzutreffen war ist heute auch wegen Spam und anderer unerwünschter Inhalte kaum noch zu finden. Ein Gästebuch zu erstellen ist allerdings eine gute Übung für den Einstieg in die Entwicklung von Webanwendungen.
+Ein Klassiker im Internet aus der Zeit vor dem Siegeszug der sozialen Medien ist das Gästebuch. Was Anfang der 2000er
+noch bei vielen Homepages anzutreffen war, ist heute auch wegen Spam und anderer unerwünschter Inhalte kaum noch zu
+finden. Ein Gästebuch zu erstellen ist allerdings eine gute Übung für den Einstieg in die Entwicklung von
+Webanwendungen.
 
-Wir werden in diesem Tutorial das Gästebuch mit der Programmiersprache [Python](https://www.python.org/) in der Version 3.11 und dem [Tornado Web Server](https://www.tornadoweb.org/) mit der Version 6.4 entwickeln. Außerdem werden wir die Gästebucheinträge in einer [PostgreSQL](https://www.postgresql.org/) Datenbank speichern.
+Wir werden in diesem Tutorial das Gästebuch mit der Programmiersprache [Python](https://www.python.org/) in der Version
+3.13 und dem [Tornado Web Server](https://www.tornadoweb.org/) mit der Version 6.5.2 entwickeln. Außerdem werden wir
+die Gästebucheinträge in einer [PostgreSQL](https://www.postgresql.org/) Datenbank speichern.
 
 ## Datenmodell
 
-Jeder Gästebucheintrag wird als Datensatz bestehend aus den Werten `name`, `email`, `message` sowie einem automatischen Timestamp für den Zeitpunkt der Erstellung in einer Einzelnen Tabelle abgelegt. Die Tabelle wird außerdem eine automatisch vergebene numerische id als Primärschlüssel haben.
+Jeder Gästebucheintrag wird als Datensatz bestehend aus den Werten `name`, `email`, `message` sowie einem automatischen
+Timestamp für den Zeitpunkt der Erstellung in einer einzelnen Tabelle abgelegt. Die Tabelle wird außerdem eine
+automatisch vergebene numerische id als Primärschlüssel haben.
 
 ```mermaid
 erDiagram
-  guestbook {
+  entry {
     bigint id PK
     varchar guestname
     varchar email
@@ -19,7 +26,10 @@ erDiagram
   }
 ```
 
-Eine Webanwendung sollte nicht mit dem Superuser auf die Datenbank zugreifen, also erstellen wir als Erstes einen neuen Datenbankbenutzer und ein dazu passendes Schema.
+Eine Webanwendung sollte nicht mit dem Superuser auf die Datenbank zugreifen, also erstellen wir als Erstes einen neuen
+Datenbankbenutzer und ein dazu passendes Schema. Wir verwenden den Befehl
+`psql --host=localhost --port=5432 --username=postgres` und melden uns mit dem Superuser `postgres` an der lokal
+installierten Datenbank an und führen die folgenden Statements aus.
 
 ```postgresql
 CREATE USER guestbook WITH PASSWORD 'trustno1';
@@ -28,6 +38,8 @@ CREATE SCHEMA AUTHORIZATION guestbook;
 ```
 
 Mit dem neu angelegten Datenbankbenutzer können wir jetzt in das ebenfalls neu angelegte Schema die Tabelle erstellen.
+Wir melden uns mit dem Befehl `psql --host=localhost --port=5432 --username=guestbook` als neuer Datenbankbenutzer
+`guestbook` an und führen das folgende Statement aus um die Tabelle `entry` anzulegen.
 
 ```postgresql
 CREATE TABLE "entry" (
@@ -47,7 +59,11 @@ Um das Tornado-Webframework verwenden zu können müssen wir zuerst das Package 
 pip install -U tornado
 ```
 
-Nachdem das Package installiert ist können wir das Grundgerüst einer Tornado-Anwendung erstellen. Wir erstellen ein `HTTPServer`-Objekt und übergeben dabei ein `Application`-Objekt, welches wiederum zu bestimmten Pfaden registrierte `RequestHandler` enthält. Tornado nutzt das `asyncio`-Package aus der Python-Standard-Library, also müssen wir die Initialisierung in eine Coroutine durchführen und diese beim Start des Event-Loops übergeben. Außerdem erlauben wir es den Port des Web-Servers per Kommandozeilenparameter angeben zu können.
+Nachdem das Package installiert ist, können wir das Grundgerüst einer Tornado-Anwendung erstellen. Wir erstellen ein
+`HTTPServer`-Objekt und übergeben dabei ein `Application`-Objekt, welches wiederum zu bestimmten Pfaden registrierte
+`RequestHandler` enthält. Tornado nutzt das `asyncio`-Package aus der Python-Standard-Library, also müssen wir die
+Initialisierung in eine Coroutine durchführen und diese beim Start des Event-Loops übergeben. Außerdem erlauben wir es
+den Port des Web-Servers per Kommandozeilenparameter angeben zu können.
 
 ```python
 import asyncio
@@ -79,13 +95,15 @@ if __name__ == '__main__':
 
 ## PostgreSQL-Connection-Pool initialisieren
 
-Um eine Verbindung zur Datenbank herstellen zu können brauchen wir ein weiteres Package, das wir zuerst installieren müssen.
+Um eine Verbindung zur Datenbank herstellen zu können brauchen wir ein weiteres Package, das wir zuerst installieren
+müssen.
 
 ```
 pip install -U asyncpg
 ```
 
-Wir initialisieren in der `main`-Funktion einen Connection-Pool. Jeder Request an das Gästebuch soll eine eigene Connection aus dem Pool verwenden um SQL-Statement an die Datenbank zu schicken.
+Wir initialisieren in der `main`-Funktion einen Connection-Pool. Jeder Request an das Gästebuch soll eine eigene
+Connection aus dem Pool verwenden, um SQL-Statement an die Datenbank zu schicken.
 
 ```python
 import asyncio
@@ -121,9 +139,8 @@ if __name__ == '__main__':
 
 ## Gästebuch-Logik
 
-Die eigentliche Logik des Gästebuchs implementieren wir in einem `GuestbookHandler`.
-Außerdem werden wir eine `GuestbookRepository`-Klasse erstellen in der die Zugriffe auf die Datenbank
-gekapselt werden.
+Die eigentliche Logik des Gästebuchs implementieren wir in einem `GuestbookHandler`. Außerdem werden wir eine
+`GuestbookRepository`-Klasse erstellen in der die Zugriffe auf die Datenbank gekapselt werden.
 
 ```mermaid
 classDiagram
@@ -155,8 +172,9 @@ class GuestbookHandler {
   get()
   post()
 }
-
 ```
+
+### Formularverarbeitung
 
 ```python
 from datetime import datetime
@@ -204,7 +222,6 @@ class EntryRepository:
                                           MAX_ENTRIES_PER_PAGE, (page - 1) * MAX_ENTRIES_PER_PAGE)
         return [self.__from_record(x) for x in entries]
 
-
 class GuestbookHandler(RequestHandler):
     def initialize(self, repo: EntryRepository):
         self.__repo = repo
@@ -230,7 +247,11 @@ class GuestbookHandler(RequestHandler):
 
 ```
 
-Zur Darstellung der Gästebuchseiten und des Formulars nutzen wir ein Template.
+### Darstellung des Gästebuchs
+
+Zur Darstellung der Gästebuchseiten und des Formulars nutzen wir ein Template. Den Quellcode des Templates speichern
+wir in der Datei `templates/guestbook.html`. Das Template enthält auch das HTML-Formular zum Anlegen neuer
+Gästebucheinträge.
 
 ```html
 <!DOCTYPE html>
@@ -272,6 +293,90 @@ Zur Darstellung der Gästebuchseiten und des Formulars nutzen wir ein Template.
 </div>
 </body>
 </html>
+```
+
+Die CSS-Regeln legen wir in der separaten Datei `assets/style.css` ab.
+
+```css
+body {
+    background-color: whitesmoke;
+    color: black;
+    font-family: 'Comic Sans MS', cursive;
+    padding: 0;
+    margin: 2em;
+}
+
+form {
+    background-color: gainsboro;
+    padding: 2em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+    margin: 2em 0;
+}
+
+input, textarea, select {
+    background-color: white;
+    color: black;
+    border: none;
+    font-family: 'Comic Sans MS', cursive;
+    font-size: 1em;
+}
+
+button {
+    font-family: 'Comic Sans MS', cursive;
+    padding: 1em;
+    text-align: center;
+    background-color: lightsteelblue;
+    border-top: none;
+    border-left: none;
+    border-bottom: 2px solid steelblue;
+    border-right: 2px solid steelblue;
+    border-radius: 0.5em;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+button:active {
+    border-top: 2px solid steelblue;
+    border-left: 2px solid steelblue;
+    border-bottom: none;
+    border-right: none;
+}
+
+textarea {
+    resize: none;
+}
+
+a {
+    color: steelblue;
+}
+
+a:hover {
+    color: firebrick;
+}
+
+.container {
+    margin: 0 auto;
+    width: 740px;
+}
+
+.entry {
+    background-color: wheat;
+    padding: 2em;
+    margin: 2em 0;
+}
+
+.message {
+    margin-top: 1em;
+    white-space: pre-wrap;
+}
+
+.pages {
+    background-color: gainsboro;
+    padding: 2em;
+    text-align: center;
+}
 ```
 
 ## Routing
