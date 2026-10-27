@@ -19,7 +19,7 @@ automatisch vergebene numerische id als Primärschlüssel haben.
 erDiagram
   entry {
     bigint id PK
-    varchar guestname
+    varchar name
     varchar email
     varchar message
     timestamp posted
@@ -140,7 +140,7 @@ if __name__ == '__main__':
 ## Gästebuch-Logik
 
 Die eigentliche Logik des Gästebuchs implementieren wir in einem `GuestbookHandler`. Außerdem werden wir eine
-`GuestbookRepository`-Klasse erstellen in der die Zugriffe auf die Datenbank gekapselt werden.
+`EntryRepository`-Klasse erstellen in der die Zugriffe auf die Datenbank gekapselt werden.
 
 ```mermaid
 classDiagram
